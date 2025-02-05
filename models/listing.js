@@ -1,5 +1,6 @@
 // models folder contain all model that we have create
 const mongoose = require("mongoose");
+const review = require("./review");
 
 // Schema
 const Schema = mongoose.Schema;
@@ -17,6 +18,12 @@ const listingSchema = new Schema({
     price : Number,
     location : String,
     country : String,
+    reviews : [
+        {
+            type : Schema.Types.ObjectId,
+            ref : 'Review'
+        }
+    ]
 });
 
 // model
