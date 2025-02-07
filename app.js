@@ -10,6 +10,8 @@ const ExpressError = require("./utils/ExpressError.js");
 const {listingSchema, reviewSchema} = require("./schema.js");// for server side schema validation
 const Review = require("./models/review.js");
 
+const listings = require("./routes/listing.js") ; // requiring listing routes
+
 app.set("view engine" , "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({extended : true}));
@@ -20,16 +22,6 @@ app.use(express.static(path.join(__dirname, "/public")));
 main().then(() => {console.log("Connected to DB")}).catch(err => console.log(err));
 async function main() {
     await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
-}
-
-let validateListing = (req,res,next) => {// Validate server side schema
-  let {error} = listingSchema.validate(req.body);// Pass as middleware in post and put request 
-  if(error){
-    let errMsg = error.details.map((el) => el.message).join(',')
-    throw new ExpressError(400,errMsg);
-  }else{
-    next();
-  }
 }
 
 //Method for validate review schema
@@ -47,8 +39,18 @@ app.get("/" , (req,res) => {
     res.send("Its working....");
 });
 
+app.use("/listings", listings);// this is use listings router when /listings is used
 
 
+// let validateListing = (req,res,next) => {// Validate server side schema
+//   let {error} = listingSchema.validate(req.body);// Pass as middleware in post and put request 
+//   if(error){
+//     let errMsg = error.details.map((el) => el.message).join(',')
+//     throw new ExpressError(400,errMsg);
+//   }else{
+//     next();
+//   }
+// }
 // app.get("/testListing" , async (req,res) => {
 //     let sampleListing = new Listing({
 //         title : "Villa",
@@ -60,58 +62,53 @@ app.get("/" , (req,res) => {
 //     console.log(sampleListing);
 //     res.send("Its Working");
 // })
-
+//     ----------     All route of listing is send into route folder ----------
 // Index Route
-app.get("/listings" , wrapAsync(async (req,res) => {
-    let allListings   = await Listing.find({});
-    res.render("listings/index.ejs", {allListings});
-}));
-
-// CREATE : New & Create Route : --> GET  /listings/new  --> FORM  --  Submit ---> POST Request   -- /listings
-app.get("/listings/new" , (req,res) => {// we have to put this route upper than show route bc it consider new a id on show route
-    res.render("listings/new.ejs");
-});
-
-// READ : Show Route   GET   /listings/:id
-app.get("/listings/:id", wrapAsync(async (req,res) => {
-    let {id} = req.params;
-    const listing = await Listing.findById(id).populate("reviews");
-    res.render("listings/show.ejs", {listing});
-}));
-
-// Create Route
-app.post("/listings" ,validateListing, wrapAsync(async (req,res, next) => {  
-  let newListing =   new Listing(req.body.listing)
-  await newListing.save();
-  console.log(newListing);
-  res.redirect("/listings")
+// app.get("/listings" , wrapAsync(async (req,res) => {
+//     let allListings   = await Listing.find({});
+//     res.render("listings/index.ejs", {allListings});
+// }));
+// // CREATE : New & Create Route : --> GET  /listings/new  --> FORM  --  Submit ---> POST Request   -- /listings
+// app.get("/listings/new" , (req,res) => {
+//     // we have to put this route upper than show route bc it consider new a id on show route
+//     res.render("listings/new.ejs");
+// });
+// // READ : Show Route   GET   /listings/:id
+// app.get("/listings/:id", wrapAsync(async (req,res) => {
+//     let {id} = req.params;
+//     const listing = await Listing.findById(id).populate("reviews");
+//     res.render("listings/show.ejs", {listing});
+// }));
+// // Create Route
+// app.post("/listings" ,validateListing, wrapAsync(async (req,res, next) => {  
+//   let newListing =   new Listing(req.body.listing)
+//   await newListing.save();
+//   console.log(newListing);
+//   res.redirect("/listings")
   
-}));
+// }));
+// // Update : Edit & Update Route
+// //     GET -- /LISTINGS/:ID/EDIT    --> edit form ---  submit ---  >  PUT  --->  /listings/:id
+// // Edit
+// app.get("/listings/:id/edit", wrapAsync(async (req,res) => {
+//     let {id} = req.params;
+//     const listing = await Listing.findById(id);
+//     res.render("listings/edit.ejs" , {listing});
+// }));
+// // Update
+// app.put("/listings/:id", validateListing ,wrapAsync(async (req,res) => {
+//     let {id} = req.params;
+//     await Listing.findByIdAndUpdate(id, {...req.body.listing});
+//    res.redirect(`/listings/${id}`);
+// }));
+// // Delete Route  --> /listings/:id
+// app.delete("/listings/:id" ,wrapAsync( async (req,res) => {
+//     let {id} = req.params;
+//     let deletedListing = await Listing.findByIdAndDelete(id);
+//     console.log(deletedListing);
+//     res.redirect("/listings");
+// }));
 
-// Update : Edit & Update Route
-//     GET -- /LISTINGS/:ID/EDIT    --> edit form ---  submit ---  >  PUT  --->  /listings/:id
-
-// Edit
-app.get("/listings/:id/edit", wrapAsync(async (req,res) => {
-    let {id} = req.params;
-    const listing = await Listing.findById(id);
-    res.render("listings/edit.ejs" , {listing});
-}));
-
-// Update
-app.put("/listings/:id", validateListing ,wrapAsync(async (req,res) => {
-    let {id} = req.params;
-    await Listing.findByIdAndUpdate(id, {...req.body.listing});
-   res.redirect(`/listings/${id}`);
-}));
-// Delete Route  --> /listings/:id
-
-app.delete("/listings/:id" ,wrapAsync( async (req,res) => {
-    let {id} = req.params;
-    let deletedListing = await Listing.findByIdAndDelete(id);
-    console.log(deletedListing);
-    res.redirect("/listings");
-}));
 
 // Review 
 // Post Route
@@ -125,7 +122,6 @@ app.post("/listings/:id/reviews", validateReview ,wrapAsync( async(req,res) => {
     
     res.redirect(`listings/${listing._id}`);
 }))
-
 // Delete Route
 // $pull the pull operator removes from an existing array all instances of a value or value of values that match a specific condition
 app.delete("/listing/:id/reviews/reviewId", async (req,res) =>{
