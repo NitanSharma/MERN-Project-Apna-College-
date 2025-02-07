@@ -1,16 +1,13 @@
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
-const Listing = require("./models/listing.js");// listing model
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
-const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
-const {listingSchema, reviewSchema} = require("./schema.js");// for server side schema validation
-const Review = require("./models/review.js");
 
 const listings = require("./routes/listing.js") ; // requiring listing routes
+const reviews = require("./routes/review.js")
 
 app.set("view engine" , "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -24,24 +21,44 @@ async function main() {
     await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
 }
 
-//Method for validate review schema
-const validateReview =(req,res,next) =>{
-    let {error} = reviewSchema.validate(req.body);
-    if(error){
-        let errMsg = error.details.map((el) => el.message).join(',')
-        throw new ExpressError(400,errMsg);
-      }else{
-        next();
-      }
-}
-
 app.get("/" , (req,res) => {
     res.send("Its working....");
 });
 
 app.use("/listings", listings);// this is use listings router when /listings is used
+app.use("/listings/:id/reviews", reviews);
+
+app.all("*", (req,res,next) => {// all other request other than route
+    next(new ExpressError(404,"Page Not Found!"));
+})
+
+app.use((err, req,res,next) => {// middlware for error
+    let {statusCode=500, message="Something went wrong"} = err;
+    res.status(statusCode).render("error.ejs", {message});
+    // res.status(statusCode).send(message);
+})
+
+app.listen(8080 , () => {
+    console.log("Server is listening to port 8080");
+})
 
 
+///         ------- not using in this app.js file --------
+// const Listing = require("./models/listing.js");// listing model 
+// const wrapAsync = require("./utils/wrapAsync.js");   
+// const {listingSchema, reviewSchema} = require("./schema.js");// for server side schema validation file
+// const Review = require("./models/review.js");  
+
+// //Method for validate review schema
+// const validateReview =(req,res,next) =>{
+//     let {error} = reviewSchema.validate(req.body);
+//     if(error){
+//         let errMsg = error.details.map((el) => el.message).join(',')
+//         throw new ExpressError(400,errMsg);
+//       }else{
+//         next();
+//       }
+// }
 // let validateListing = (req,res,next) => {// Validate server side schema
 //   let {error} = listingSchema.validate(req.body);// Pass as middleware in post and put request 
 //   if(error){
@@ -85,8 +102,7 @@ app.use("/listings", listings);// this is use listings router when /listings is 
 //   await newListing.save();
 //   console.log(newListing);
 //   res.redirect("/listings")
-  
-// }));
+ // }));
 // // Update : Edit & Update Route
 // //     GET -- /LISTINGS/:ID/EDIT    --> edit form ---  submit ---  >  PUT  --->  /listings/:id
 // // Edit
@@ -108,39 +124,23 @@ app.use("/listings", listings);// this is use listings router when /listings is 
 //     console.log(deletedListing);
 //     res.redirect("/listings");
 // }));
+// -------   REVIEW ROUTER
+// // Review 
+// // Post Route
+// app.post("/listings/:id/reviews", validateReview ,wrapAsync( async(req,res) => {
+//     let listing = await Listing.findById(req.params.id);
+//     let newReview = new Review(req.body.review);
+//     listing.reviews.push(newReview);
+//     await newReview.save();
+//     await listing.save();   
+//     res.redirect(`listings/${listing._id}`);
+// }))
+// // Delete Route
+// // $pull the pull operator removes from an existing array all instances of a value or value of values that match a specific condition
+// app.delete("/listing/:id/reviews/reviewId", async (req,res) =>{
+//     let {id , reviewId} = req.params;
+//     await Listing.findByIdAndUpdate(id , {$pull : {reviews : reviewId}});
+//     await Review.findByIdAndDelete(reviewId);
+//     res.redirect(`/listings/${id}`);
+// })
 
-
-// Review 
-// Post Route
-app.post("/listings/:id/reviews", validateReview ,wrapAsync( async(req,res) => {
-    let listing = await Listing.findById(req.params.id);
-    let newReview = new Review(req.body.review);
-
-    listing.reviews.push(newReview);
-    await newReview.save();
-    await listing.save();
-    
-    res.redirect(`listings/${listing._id}`);
-}))
-// Delete Route
-// $pull the pull operator removes from an existing array all instances of a value or value of values that match a specific condition
-app.delete("/listing/:id/reviews/reviewId", async (req,res) =>{
-    let {id , reviewId} = req.params;
-
-    await Listing.findByIdAndUpdate(id , {$pull : {reviews : reviewId}});
-    await Review.findByIdAndDelete(reviewId);
-
-    res.redirect(`/listings/${id}`);
-})
-
-app.all("*", (req,res,next) => {// all other request other than route
-    next(new ExpressError(404,"Page Not Found!"));
-})
-app.use((err, req,res,next) => {// middlware for error
-    let {statusCode=500, message="Something went wrong"} =err;
-    res.status(statusCode).render("error.ejs", {message});
-    // res.status(statusCode).send(message);
-})
-app.listen(8080 , () => {
-    console.log("Server is listening to port 8080");
-})
