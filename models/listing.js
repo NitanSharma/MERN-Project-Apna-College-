@@ -1,6 +1,6 @@
 // models folder contain all model that we have create
 const mongoose = require("mongoose");
-const review = require("./review");
+const Review = require("./review.js");
 
 // Schema
 const Schema = mongoose.Schema;
@@ -24,6 +24,12 @@ const listingSchema = new Schema({
             ref : 'Review'
         }
     ]
+});
+// mongoose middleware
+listingSchema.post("findOneAndDelete", async (listing) =>{
+        if(listing){
+            await Review.deleteMany({_id : {$in : listing.reviews}});
+        }
 });
 
 // model
