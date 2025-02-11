@@ -5,6 +5,8 @@ const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError.js");
+const session = require("express-session");// express session requiring
+const flash = require("connect-flash");
 
 const listings = require("./routes/listing.js") ; // requiring listing routes
 const reviews = require("./routes/review.js")
@@ -16,14 +18,35 @@ app.use(methodOverride("_method"));
 app.engine("ejs", ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
-main().then(() => {console.log("Connected to DB")}).catch(err => console.log(err));
-async function main() {
-    await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
-}
+const sessionOption = {
+    secret : "mysupersecretcode",
+    resave : false,
+    saveUninitialized : true,
+    cookie : {
+        expires : Date.now() + 7 * 24 * 60 * 60 * 1000,// expire in one week 7 day 24 hours 60 min 60 sec and 1000 milisecong
+        maxAge : 7 * 24 * 60 * 60 * 1000,
+        httpOnly : true,
+    }
+};
 
 app.get("/" , (req,res) => {
     res.send("Its working....");
 });
+
+app.use(session(sessionOption));// express session using
+app.use(flash());
+
+app.use((req,res,next) => {
+    res.locals.success = req.flash("success");
+    res.locals.error = req.flash("error");
+    console.log(res.locals.success);
+    next();
+ })
+
+main().then(() => {console.log("Connected to DB")}).catch(err => console.log(err));
+async function main() {
+    await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
+}
 
 app.use("/listings", listings);// this is use listings router when /listings is used
 app.use("/listings/:id/reviews", reviews);
