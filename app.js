@@ -15,7 +15,6 @@ const listingRouter = require("./routes/listing.js") ; // requiring listing rout
 const reviewRouter = require("./routes/review.js")
 const userRouter = require("./routes/user.js");
 
-
 main().then(() => {console.log("Connected to DB")}).catch(err => console.log(err));
 async function main() {
     await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
@@ -57,24 +56,14 @@ passport.deserializeUser(User.deserializeUser());// Generates a function that is
 app.use((req,res,next) => {
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
-    console.log(res.locals.success);
+    res.locals.currUser = req.user;// use in navbar.ejs file to know user have object or undefined
+    // console.log(res.locals.success);
     next();
- })
+})
 
 app.use("/listings", listingRouter);// this is use listings router when /listings is used
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/" , userRouter);
-
-// Demo User Authentication and Autorization
-app.get("/demouser" , async (req,res) => {
-    let fakeUser = new User({
-        email : "sharma@gmail.com",
-        username : "Nitin"
-    })
-   // Convenience method to register a new user instance with a given password. Checks if username is unique. 
-   let registerUser = await User.register(fakeUser, "helloworld");
-   res.send(registerUser);
-})
 
 app.all("*", (req,res,next) => {// all other request other than route
     next(new ExpressError(404,"Page Not Found!"));
@@ -90,7 +79,16 @@ app.listen(8080 , () => {
     console.log("Server is listening to port 8080");
 })
 
-
+// Demo User Authentication and Autorization
+// app.get("/demouser" , async (req,res) => {
+//     let fakeUser = new User({
+//         email : "sharma@gmail.com",
+//         username : "Nitin"
+//     })
+//    // Convenience method to register a new user instance with a given password. Checks if username is unique. 
+//    let registerUser = await User.register(fakeUser, "helloworld");
+//    res.send(registerUser);
+// }
 ///         ------- not using in this app.js file --------
 // const Listing = require("./models/listing.js");// listing model 
 // const wrapAsync = require("./utils/wrapAsync.js");   
