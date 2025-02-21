@@ -43,9 +43,6 @@ const sessionOption = {
     }
 };
 
-app.get("/" , (req,res) => {
-    res.send("Its working....");
-});
 
 app.use(session(sessionOption));// express session using
 app.use(flash());
