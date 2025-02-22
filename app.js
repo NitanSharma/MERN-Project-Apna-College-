@@ -11,7 +11,7 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError.js");
 const session = require("express-session");// express session requiring
-const MongoStore = require('connect-mongo');// for mongo session store
+// const MongoStore = require('connect-mongo');// for mongo session store
 const flash = require("connect-flash");
 const passport = require("passport");// Authentication and Authorization
 const LocalStrategy = require("passport-local");
@@ -35,20 +35,20 @@ app.use(methodOverride("_method"));
 app.engine("ejs", ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
-const store = MongoStore.create({
-    mongoUrl : dbUrl,
-    crypto : {
-        secret : process.env.SECRET,
-    },
-    touchAfter : 24 * 3600,
-});
+// const store = MongoStore.create({
+//     mongoUrl : dbUrl,
+//     crypto : {
+//         secret : process.env.SECRET,
+//     },
+//     touchAfter : 24 * 3600,
+// });
 
-store.on("error" , () => {
-    console.log("ERROR in MONGO SESSION STORE" , err);
-})
+// store.on("error" , () => {
+//     console.log("ERROR in MONGO SESSION STORE" , err);
+// })
 
 const sessionOption = {
-     store,
+    // store,
     secret : process.env.SECRET,
     resave : false,
     saveUninitialized : true,
